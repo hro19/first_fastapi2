@@ -30,19 +30,15 @@ class TodoUpdate(BaseModel):
 
 
 class TodoResponse(TodoBase):
-    """Todoレスポンス用スキーマ"""
+    """Todoレスポンス用スキーマ（日本時間のみ）"""
     id: int
     completed: bool
-    created_at: datetime
-    updated_at: datetime
-    completed_at: Optional[datetime] = None
-    deleted_at: Optional[datetime] = None
     
-    # 日本時間でフォーマットされた文字列
-    created_at_jst: Optional[str] = None
-    updated_at_jst: Optional[str] = None
-    completed_at_jst: Optional[str] = None
-    deleted_at_jst: Optional[str] = None
+    # 日本時間でフォーマットされた文字列のみ
+    created_at: str = Field(..., description="作成日時（日本時間）")
+    updated_at: str = Field(..., description="更新日時（日本時間）")
+    completed_at: Optional[str] = Field(None, description="完了日時（日本時間）")
+    deleted_at: Optional[str] = Field(None, description="削除日時（日本時間）")
     
     class Config:
         from_attributes = True

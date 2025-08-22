@@ -11,22 +11,18 @@ router = APIRouter()
 
 
 def format_todo_response(todo: Todo) -> TodoResponse:
-    """Todoモデルをレスポンススキーマに変換し、日本時間の文字列を追加"""
+    """Todoモデルをレスポンススキーマに変換（日本時間のみ）"""
     todo_dict = {
         "id": todo.id,
         "title": todo.title,
         "description": todo.description,
         "completed": todo.completed,
         "priority": todo.priority,
-        "created_at": todo.created_at,
-        "updated_at": todo.updated_at,
-        "completed_at": todo.completed_at,
-        "deleted_at": todo.deleted_at,
-        # 日本時間でフォーマット
-        "created_at_jst": format_jst(todo.created_at),
-        "updated_at_jst": format_jst(todo.updated_at),
-        "completed_at_jst": format_jst(todo.completed_at),
-        "deleted_at_jst": format_jst(todo.deleted_at),
+        # 日本時間でフォーマットされた文字列のみ
+        "created_at": format_jst(todo.created_at),
+        "updated_at": format_jst(todo.updated_at),
+        "completed_at": format_jst(todo.completed_at),
+        "deleted_at": format_jst(todo.deleted_at),
     }
     return TodoResponse(**todo_dict)
 

@@ -98,6 +98,7 @@ The application will be available at:
 - `GET /api/v1/profiles` - User profile management
 - `GET /api/v1/products` - Product management  
 - `GET /api/v1/images` - Image analysis using Azure AI Vision
+- `GET /api/v1/todos` - Todo management with soft delete support
 
 ## 🏗 Project Structure
 
@@ -111,12 +112,14 @@ first_fastapi/
 │   ├── api/               # API route handlers
 │   │   ├── image_analysis.py
 │   │   ├── products.py
-│   │   └── profiles.py
+│   │   ├── profiles.py
+│   │   └── todos.py
 │   ├── models/            # SQLAlchemy database models
 │   ├── schemas/           # Pydantic request/response models
-│   └── services/          # Business logic and external integrations
-│       ├── azure_vision.py
-│       └── image_processing.py
+│   ├── services/          # Business logic and external integrations
+│   │   ├── azure_vision.py
+│   │   └── image_processing.py
+│   └── utils/             # Utility functions (datetime, etc.)
 ├── uploads/               # File upload directory
 ├── main.py               # Application entry point
 ├── inspect_db.py         # Database inspection utility

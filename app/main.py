@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import profiles, products, image_analysis
+from app.api import profiles, products, image_analysis, todos
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -37,6 +37,12 @@ app.include_router(
     tags=["image-analysis"]
 )
 
+app.include_router(
+    todos.router,
+    prefix=f"{settings.API_V1_STR}/todos",
+    tags=["todos"]
+)
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -48,7 +54,8 @@ async def root():
         "endpoints": {
             "profiles": f"{settings.API_V1_STR}/profiles",
             "products": f"{settings.API_V1_STR}/products",
-            "image_analysis": f"{settings.API_V1_STR}/images"
+            "image_analysis": f"{settings.API_V1_STR}/images",
+            "todos": f"{settings.API_V1_STR}/todos"
         }
     }
 

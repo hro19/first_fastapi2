@@ -95,7 +95,6 @@ The application will be available at:
 - `GET /health` - Health check endpoint
 
 ### Feature Endpoints
-- `GET /api/v1/playing-with-neon` - Neon database testing endpoints
 - `GET /api/v1/profiles` - User profile management
 - `GET /api/v1/products` - Product management  
 - `GET /api/v1/images` - Image analysis using Azure AI Vision
@@ -111,7 +110,6 @@ first_fastapi/
 │   │   └── database.py    # Database connections
 │   ├── api/               # API route handlers
 │   │   ├── image_analysis.py
-│   │   ├── playing_with_neon.py
 │   │   ├── products.py
 │   │   └── profiles.py
 │   ├── models/            # SQLAlchemy database models

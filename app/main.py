@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import playing_with_neon, profiles, products, image_analysis
+from app.api import profiles, products, image_analysis
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -19,12 +19,6 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(
-    playing_with_neon.router,
-    prefix=f"{settings.API_V1_STR}/playing-with-neon",
-    tags=["playing-with-neon"]
-)
-
 app.include_router(
     profiles.router,
     prefix=f"{settings.API_V1_STR}/profiles",
@@ -52,7 +46,6 @@ async def root():
         "version": settings.VERSION,
         "docs": "/docs",
         "endpoints": {
-            "playing_with_neon": f"{settings.API_V1_STR}/playing-with-neon",
             "profiles": f"{settings.API_V1_STR}/profiles",
             "products": f"{settings.API_V1_STR}/products",
             "image_analysis": f"{settings.API_V1_STR}/images"

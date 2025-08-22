@@ -4,14 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a FastAPI project using **uv** as the package manager. The project includes a basic FastAPI application with sample endpoints.
+This is a FastAPI project with PostgreSQL database integration (Neon) and Azure AI Vision capabilities. The project follows a modular architecture with proper separation of concerns.
 
 ## Project Status
 
-**Current State**: Basic FastAPI application implemented
+**Current State**: Full-stack FastAPI application with database and AI integration
 **Framework**: FastAPI
 **Language**: Python 3.12+
-**Package Manager**: uv (version 0.8.4)
+**Package Manager**: uv
+**Database**: PostgreSQL (Neon)
+**AI Services**: Azure Cognitive Services Vision
 
 ## Development Setup
 
@@ -42,6 +44,31 @@ This project uses **uv** for Python package management and virtual environment h
    uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
 
+## Architecture Overview
+
+The application follows a modular FastAPI architecture:
+
+- **`app/main.py`** - Main FastAPI application with CORS and router configuration
+- **`app/core/`** - Core functionality (config, database connections)
+- **`app/api/`** - API route handlers organized by feature
+- **`app/models/`** - SQLAlchemy database models
+- **`app/schemas/`** - Pydantic models for request/response validation
+- **`app/services/`** - Business logic and external service integrations
+- **`main.py`** - Entry point that imports from app directory
+
+### Database Architecture
+
+Uses SQLAlchemy with async support for PostgreSQL (Neon):
+- Async engine for API operations
+- Sync engine for database inspection/migrations
+- Connection pooling configured
+- Both async and sync session factories available
+
+### External Service Integration
+
+- **Azure AI Vision** - Image analysis capabilities through `app/services/azure_vision.py`
+- **File Upload** - Image processing and storage in `uploads/` directory
+
 ## Common Development Tasks
 
 ### Running the Application
@@ -55,12 +82,14 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000
 
 ### Current API Endpoints
 
-The application currently provides these endpoints:
+The application provides these endpoint groups:
 
-- `GET /` - Root endpoint returning a welcome message
+- `GET /` - Root endpoint with project info and available endpoints
 - `GET /health` - Health check endpoint
-- `GET /items/{item_id}` - Get item by ID with optional query parameter
-- `POST /items/` - Create a new item
+- `/api/v1/playing-with-neon` - Neon database testing endpoints
+- `/api/v1/profiles` - User profile management
+- `/api/v1/products` - Product management
+- `/api/v1/images` - Image analysis using Azure AI Vision
 
 ### Adding Dependencies
 ```bash
@@ -77,13 +106,20 @@ uv sync
 ### Project Structure
 ```
 first_fastapi/
-├── .venv/                # Virtual environment (created by uv)
-├── main.py              # FastAPI application entry point
-├── pyproject.toml       # Project configuration and dependencies
-├── uv.lock             # Lock file for reproducible installs
-├── CLAUDE.md           # This file
-├── README.md           # Project documentation
-└── .gitignore          # Git ignore rules
+├── app/                 # Main application directory
+│   ├── main.py         # FastAPI app configuration and routing
+│   ├── core/           # Core functionality
+│   │   ├── config.py   # Application settings and environment variables
+│   │   └── database.py # Database connection and session management
+│   ├── api/            # API route handlers by feature
+│   ├── models/         # SQLAlchemy database models
+│   ├── schemas/        # Pydantic request/response models
+│   └── services/       # Business logic and external integrations
+├── uploads/            # File upload directory
+├── main.py            # Application entry point (imports from app/)
+├── inspect_db.py      # Database inspection utility
+├── pyproject.toml     # Project configuration and dependencies
+└── uv.lock           # Lock file for reproducible installs
 ```
 
 ### Testing
@@ -113,28 +149,51 @@ uv run ruff check
 uv run mypy main.py
 ```
 
+### Database Operations
+```bash
+# Inspect database tables (using included utility)
+uv run python inspect_db.py
+```
+
 ### API Documentation
 
 FastAPI automatically generates interactive API documentation:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Important Configuration Files
+## Environment Configuration
 
-### pyproject.toml
-Contains project metadata and dependencies. Key sections:
-- `[project]` - Project name, version, Python requirements
-- `[project.dependencies]` - Production dependencies
-- `[project.optional-dependencies]` - Development dependencies
+Create a `.env` file in the project root with these variables:
+```bash
+# Database Configuration (Neon PostgreSQL)
+DATABASE_URL=postgresql+asyncpg://username:password@host/database
+DATABASE_URL_SYNC=postgresql://username:password@host/database
 
-### uv.lock
-Auto-generated lock file ensuring reproducible installations across environments. Do not edit manually.
+# Azure AI Vision
+AZURE_VISION_KEY=your_azure_vision_key
+AZURE_VISION_ENDPOINT=your_azure_vision_endpoint
 
-## Important Notes
+# File Upload Settings
+UPLOAD_DIR=uploads
+MAX_FILE_SIZE=10485760  # 10MB
+```
 
-- Python 3.12+ is required (specified in pyproject.toml)
-- The `.gitignore` file is configured for Python projects
-- Virtual environment is in `.venv/` directory
-- FastAPI and uvicorn[standard] are already installed
-- Database configuration and ORM setup can be added as needed
-- Authentication/authorization can be implemented based on requirements
+## Important Dependencies
+
+Core dependencies in `pyproject.toml`:
+- **FastAPI** - Web framework
+- **SQLAlchemy** - Database ORM with async support
+- **asyncpg** - Async PostgreSQL driver  
+- **azure-cognitiveservices-vision-computervision** - Azure AI Vision client
+- **Pillow** - Image processing
+- **aiofiles** - Async file operations
+- **python-multipart** - File upload support
+
+## Development Patterns
+
+When adding new features:
+1. Create model in `app/models/`
+2. Create Pydantic schemas in `app/schemas/`
+3. Implement business logic in `app/services/` if needed
+4. Create API routes in `app/api/`
+5. Register router in `app/main.py`

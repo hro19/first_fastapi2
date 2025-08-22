@@ -1,0 +1,89 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from typing import List, Optional
+from app.core.database import get_db
+from app.models.products import Product
+from app.schemas.products import ProductResponse, ProductCreate
+
+router = APIRouter()
+
+
+@router.get("/", response_model=List[ProductResponse])
+async def get_products(
+    skip: int = 0, 
+    limit: int = 100,
+    profile_id: Optional[str] = Query(None, description="Filter by profile ID"),
+    min_price: Optional[float] = Query(None, description="Minimum price filter"),
+    max_price: Optional[float] = Query(None, description="Maximum price filter"),
+    search: Optional[str] = Query(None, description="Search in product name"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all products with optional filtering"""
+    query = select(Product).options(selectinload(Product.profile))
+    
+    # Apply filters
+    if profile_id:
+        query = query.where(Product.profile_id == profile_id)
+    if min_price is not None:
+        query = query.where(Product.price >= min_price)
+    if max_price is not None:
+        query = query.where(Product.price <= max_price)
+    if search:
+        query = query.where(Product.name.ilike(f"%{search}%"))
+    
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.get("/{product_id}", response_model=ProductResponse)
+async def get_product_by_id(
+    product_id: str, 
+    db: AsyncSession = Depends(get_db)
+):
+    """Get a specific product by ID"""
+    result = await db.execute(
+        select(Product)
+        .options(selectinload(Product.profile))
+        .where(Product.id == product_id)
+    )
+    product = result.scalar_one_or_none()
+    
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    return product
+
+
+@router.post("/", response_model=ProductResponse)
+async def create_product(
+    product: ProductCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a new product"""
+    # Verify profile exists if profile_id is provided
+    if product.profile_id:
+        result = await db.execute(
+            select(Product).where(Product.profile_id == product.profile_id).limit(1)
+        )
+        if not result.scalar_one_or_none():
+            # Check if profile exists
+            from app.models.profiles import Profile
+            profile_result = await db.execute(
+                select(Profile).where(Profile.id == product.profile_id)
+            )
+            if not profile_result.scalar_one_or_none():
+                raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # For this example, we'll generate a simple ID (in real app, use the same function as DB)
+    import secrets
+    import string
+    product_id = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(9))
+    
+    db_product = Product(id=product_id, **product.model_dump())
+    db.add(db_product)
+    await db.commit()
+    await db.refresh(db_product)
+    return db_product

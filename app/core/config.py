@@ -13,6 +13,15 @@ class Settings:
     DATABASE_USER: str = os.getenv("DATABASE_USER", "")
     DATABASE_PASSWORD: str = os.getenv("DATABASE_PASSWORD", "")
     
+    # Azure AI Vision Settings
+    AZURE_VISION_KEY: str = os.getenv("AZURE_VISION_KEY", "")
+    AZURE_VISION_ENDPOINT: str = os.getenv("AZURE_VISION_ENDPOINT", "")
+    
+    # File Upload Settings
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
+    ALLOWED_IMAGE_TYPES: list = ["image/jpeg", "image/png", "image/webp"]
+    
     PROJECT_NAME: str = "First FastAPI with Neon"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"

@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "azure-cognitiveservices-vision-computervision>=0.9.1",
     "fastapi>=0.116.1",
+    "httpx>=0.28.1",
     "pillow>=11.3.0",
     "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.1.1",
@@ -16,4 +17,19 @@ dependencies = [
     "requests>=2.32.5",
     "sqlalchemy>=2.0.43",
     "uvicorn[standard]>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "fast: marks tests as fast (deselect with '-m \"not fast\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]

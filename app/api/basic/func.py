@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from typing import Dict, Any, List
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 router = APIRouter()
 
@@ -10,17 +10,18 @@ class NumbersRequest(BaseModel):
     numbers: List[int] = Field(..., min_items=2, max_items=1000, description="整数のリスト（2-1000個、統計分析には最低2個必要）")
     operation_type: str = Field(default="analysis", description="処理タイプ")
 
-    @validator('numbers', each_item=True)
-    def validate_number_range(cls, v):
-        if v < -1000000 or v > 1000000:
-            raise ValueError('各数値は-1,000,000から1,000,000の範囲内である必要があります')
-        return v
+    @field_validator('numbers')
+    @classmethod
+    def validate_number_range_and_meaningfulness(cls, v):
+        # 各数値の範囲チェック
+        for num in v:
+            if num < -1000000 or num > 1000000:
+                raise ValueError('各数値は-1,000,000から1,000,000の範囲内である必要があります')
 
-    @validator('numbers')
-    def validate_statistical_meaningfulness(cls, v):
-        # min_items=2 で既にチェック済みなので、len(v) < 2 のチェックは不要
+        # 統計的意味のあるデータかチェック
         if len(set(v)) == 1:
             raise ValueError('全て同じ値では統計分析の意味がありません')
+
         return v
 
 @router.get("/hello")

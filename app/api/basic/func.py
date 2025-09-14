@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from typing import Dict, Any
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 router = APIRouter()
 
@@ -20,48 +21,55 @@ async def get_info() -> Dict[str, Any]:
         "description": "Simple function-like endpoints",
         "available_endpoints": [
             "/hello - Simple hello world",
+            "/hello2 - List response example",
             "/info - Service information",
-            "/calculate/add/{a}/{b} - Add two numbers",
+            "/calculate/add?a={int}&b={int} - Add two numbers",
+            "/calculate/multiply?a={int}&b={int} - Multiply two numbers",
             "/status - Service status"
         ]
     }
 
-@router.get("/calculate/add/{a}/{b}")
+@router.get("/calculate/add")
 async def add_numbers(a: int, b: int) -> Dict[str, Any]:
-    result = a + b
     return {
         "operation": "addition",
         "operands": [a, b],
-        "result": result,
-        "formula": f"{a} + {b} = {result}"
+        "result": a + b,
+        "formula": f"{a} + {b} = {a + b}"
     }
 
-@router.get("/calculate/multiply/{a}/{b}")
+@router.get("/calculate/multiply")
 async def multiply_numbers(a: int, b: int) -> Dict[str, Any]:
-    result = a * b
     return {
         "operation": "multiplication",
         "operands": [a, b],
-        "result": result,
-        "formula": f"{a} × {b} = {result}"
+        "result": a * b,
+        "formula": f"{a} × {b} = {a * b}"
     }
 
 @router.get("/status")
 async def get_status() -> Dict[str, Any]:
+    utc_now = datetime.now()
+    jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
+
     return {
         "service_name": "Basic Functions",
         "status": "running",
         "uptime": "active",
-        "last_check": datetime.now().isoformat(),
+        "last_check_utc": utc_now.isoformat(),
+        "last_check_jst": jst_now.isoformat(),
+        "timezone": "Asia/Tokyo",
         "health": "OK"
     }
 
 @router.get("/hello2")
 async def hello2() -> list[str]:
-    current_time = datetime.now().isoformat()
+    utc_time = datetime.now().isoformat()
+    jst_time = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat()
     return [
         "Hello from hello2 function!",
-        f"Current time: {current_time}",
+        f"UTC time: {utc_time}",
+        f"JST time: {jst_time}",
         "Status: active",
         "Type: list response",
         "API version: 1.0.0"

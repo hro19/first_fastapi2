@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from typing import Dict, Any
-import json
 from datetime import datetime
 
 router = APIRouter()
@@ -56,6 +55,17 @@ async def get_status() -> Dict[str, Any]:
         "last_check": datetime.now().isoformat(),
         "health": "OK"
     }
+
+@router.get("/hello2")
+async def hello2() -> list[str]:
+    current_time = datetime.now().isoformat()
+    return [
+        "Hello from hello2 function!",
+        f"Current time: {current_time}",
+        "Status: active",
+        "Type: list response",
+        "API version: 1.0.0"
+    ]
 
 # TODO(human) - Add a function that processes a list of numbers
 @router.post("/process-numbers")

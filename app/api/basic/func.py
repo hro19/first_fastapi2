@@ -1,9 +1,27 @@
 from fastapi import APIRouter
-from typing import Dict, Any
+from typing import Dict, Any, List
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from pydantic import BaseModel, Field, validator
 
 router = APIRouter()
+
+class NumbersRequest(BaseModel):
+    numbers: List[int] = Field(..., min_items=2, max_items=1000, description="整数のリスト（2-1000個、統計分析には最低2個必要）")
+    operation_type: str = Field(default="analysis", description="処理タイプ")
+
+    @validator('numbers', each_item=True)
+    def validate_number_range(cls, v):
+        if v < -1000000 or v > 1000000:
+            raise ValueError('各数値は-1,000,000から1,000,000の範囲内である必要があります')
+        return v
+
+    @validator('numbers')
+    def validate_statistical_meaningfulness(cls, v):
+        # min_items=2 で既にチェック済みなので、len(v) < 2 のチェックは不要
+        if len(set(v)) == 1:
+            raise ValueError('全て同じ値では統計分析の意味がありません')
+        return v
 
 @router.get("/hello")
 async def hello_world() -> Dict[str, Any]:
@@ -75,10 +93,17 @@ async def hello2() -> list[str]:
         "API version: 1.0.0"
     ]
 
-# TODO(human) - Add a function that processes a list of numbers
 @router.post("/process-numbers")
-async def process_numbers(numbers: list[int]) -> Dict[str, Any]:
-    # TODO(human): Implement number processing logic
-    # Consider calculating: sum, average, min, max, count
-    # Return a comprehensive analysis of the input numbers
-    pass
+async def process_numbers(request: NumbersRequest) -> Dict[str, Any]:
+    numbers = request.numbers
+
+    return {
+        "operation": request.operation_type,
+        "count": len(numbers),
+        "sum": sum(numbers),
+        "average": sum(numbers) / len(numbers),
+        "min": min(numbers),
+        "max": max(numbers),
+        "input": numbers,
+        "validation": "passed"
+    }

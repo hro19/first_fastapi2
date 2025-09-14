@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api import profiles, products, image_analysis, todos
+from app.api.basic import func
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -43,6 +44,12 @@ app.include_router(
     tags=["todos"]
 )
 
+app.include_router(
+    func.router,
+    prefix=f"{settings.API_V1_STR}/basic",
+    tags=["basic-functions"]
+)
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -55,7 +62,8 @@ async def root():
             "profiles": f"{settings.API_V1_STR}/profiles",
             "products": f"{settings.API_V1_STR}/products",
             "image_analysis": f"{settings.API_V1_STR}/images",
-            "todos": f"{settings.API_V1_STR}/todos"
+            "todos": f"{settings.API_V1_STR}/todos",
+            "basic_functions": f"{settings.API_V1_STR}/basic"
         }
     }
 

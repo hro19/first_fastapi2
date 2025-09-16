@@ -23,5 +23,5 @@
   "buildCommand": "pip install -r requirements.txt",
   "outputDirectory": ".",
   "installCommand": "pip install -r requirements.txt",
-  "regions": ["iad1"],
+  "regions": ["iad1"]
 }

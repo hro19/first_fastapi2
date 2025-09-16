@@ -1,0 +1,41 @@
+{
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ],
+  "functions": {
+    "main.py": {
+      "maxDuration": 10,
+      "memory": 512
+    }
+  },
+  "env": {
+    "PYTHON_VERSION": "3.12"
+  },
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
+  "installCommand": "pip install -r requirements.txt",
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "/main.py"
+    },
+    {
+      "source": "/redoc",
+      "destination": "/main.py"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/main.py"
+    }
+  ]
+}

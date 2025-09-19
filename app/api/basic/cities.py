@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any, List, Set
 from pydantic import BaseModel, Field
 import httpx
-import asyncio
 from collections import defaultdict
 
 router = APIRouter()

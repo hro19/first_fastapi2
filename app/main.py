@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api import profiles, products, image_analysis, todos
-from app.api.basic import func
+from app.api.basic import func, cities
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -50,6 +50,12 @@ app.include_router(
     tags=["basic-functions"]
 )
 
+app.include_router(
+    cities.router,
+    prefix=f"{settings.API_V1_STR}/basic",
+    tags=["japanese-cities"]
+)
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -63,7 +69,8 @@ async def root():
             "products": f"{settings.API_V1_STR}/products",
             "image_analysis": f"{settings.API_V1_STR}/images",
             "todos": f"{settings.API_V1_STR}/todos",
-            "basic_functions": f"{settings.API_V1_STR}/basic"
+            "basic_functions": f"{settings.API_V1_STR}/basic",
+            "japanese_cities": f"{settings.API_V1_STR}/basic"
         }
     }
 

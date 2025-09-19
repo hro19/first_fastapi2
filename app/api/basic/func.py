@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -7,6 +7,31 @@ import httpx
 import os
 
 router = APIRouter()
+
+# 気象庁API用の都市コードマッピング
+CITY_CODES = {
+    "東京": "130000",
+    "大阪": "270000", 
+    "名古屋": "230000",
+    "札幌": "016000",
+    "仙台": "040000",
+    "横浜": "140000",  # 神奈川県
+    "京都": "260000",
+    "神戸": "280000",  # 兵庫県
+    "福岡": "400000",
+    "広島": "340000",
+    "新潟": "150000",
+    "金沢": "170000",  # 石川県
+    "静岡": "220000",
+    "岡山": "330000",
+    "熊本": "430000",
+    "鹿児島": "460000",
+    "那覇": "471000"   # 沖縄県
+}
+
+def get_city_code(city_name: str) -> Optional[str]:
+    """都市名から気象庁の地域コードを取得"""
+    return CITY_CODES.get(city_name)
 
 class NumbersRequest(BaseModel):
     numbers: List[int] = Field(..., min_items=2, max_items=1000, description="整数のリスト（2-1000個、統計分析には最低2個必要）")
@@ -60,8 +85,9 @@ async def get_info() -> Dict[str, Any]:
             "/calculate/add?a={int}&b={int} - Add two numbers",
             "/calculate/multiply?a={int}&b={int} - Multiply two numbers",
             "/status - Service status",
-            "/tenki - Get tomorrow's Tokyo weather forecast (uses JMA API, no API key required)"
-        ]
+            "/tenki?city={city_name} - Get tomorrow's weather forecast (default: 東京)"
+        ],
+        "supported_cities": list(CITY_CODES.keys())
     }
 
 @router.get("/calculate/add")
@@ -126,23 +152,42 @@ async def process_numbers(request: NumbersRequest) -> Dict[str, Any]:
     }
 
 @router.get("/tenki", response_model=WeatherResponse)
-async def get_tokyo_weather_tomorrow() -> WeatherResponse:
+async def get_tokyo_weather_tomorrow(
+    city: str = Query(default="東京", description="都市名（東京、大阪、名古屋、札幌、仙台、横浜、京都、神戸、福岡、広島、新潟、金沢、静岡、岡山、熊本、鹿児島、那覇）")
+) -> WeatherResponse:
     """
-    明日の東京エリアの天気予報を取得するAPI
+    指定された都市の明日の天気予報を取得するAPI
     
     気象庁APIを使用して天気予報を取得します（APIキー不要）。
     - データソース: 気象庁（日本の公式気象データ）
     - 時間: 日本時間（Asia/Tokyo）で計算
-    - 都市: 東京
+    - デフォルト都市: 東京
+    
+    Args:
+        city: 都市名（デフォルト: 東京）
+    
+    Examples:
+        GET /basic/tenki
+        GET /basic/tenki?city=大阪
+        GET /basic/tenki?city=福岡
     """
+    
+    # 都市コードを取得
+    city_code = get_city_code(city)
+    if not city_code:
+        available_cities = list(CITY_CODES.keys())
+        raise HTTPException(
+            status_code=400, 
+            detail=f"対応していない都市です: {city}。対応都市: {', '.join(available_cities)}"
+        )
     
     # 日本時間で明日の日付を計算
     jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
     tomorrow = jst_now + timedelta(days=1)
     tomorrow_date = tomorrow.strftime("%Y-%m-%d")
     
-    # 気象庁API URL（東京地方: 130000）
-    url = "https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json"
+    # 気象庁API URL
+    url = f"https://www.jma.go.jp/bosai/forecast/data/forecast/{city_code}.json"
     
     try:
         async with httpx.AsyncClient() as client:
@@ -182,7 +227,7 @@ async def get_tokyo_weather_tomorrow() -> WeatherResponse:
         avg_temp = (temp_min + temp_max) / 2
         
         return WeatherResponse(
-            city="東京",
+            city=city,
             date=tomorrow_date,
             jst_time=jst_now.strftime("%Y-%m-%d %H:%M:%S JST"),
             weather_main=weather_code,
@@ -196,6 +241,11 @@ async def get_tokyo_weather_tomorrow() -> WeatherResponse:
         )
         
     except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise HTTPException(
+                status_code=404,
+                detail=f"都市 '{city}' の天気予報データが見つかりません"
+            )
         raise HTTPException(
             status_code=e.response.status_code,
             detail=f"気象庁API呼び出しエラー: {e.response.status_code}"

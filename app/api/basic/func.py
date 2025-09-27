@@ -136,6 +136,34 @@ async def hello2() -> list[str]:
         "API version: 1.0.0"
     ]
 
+@router.get("/closure")
+async def explain_closure() -> Dict[str, Any]:
+    """Python のクロージャを簡潔に説明するエンドポイント"""
+
+    def make_multiplier(factor: int):
+        # `factor` を覚えておくクロージャ
+        def multiplier(value: int) -> int:
+            return factor * value
+
+        return multiplier
+
+    double = make_multiplier(2)
+    triple = make_multiplier(3)
+
+    return {
+        "term": "closure",
+        "description": "関数の外で定義された変数を、内側の関数が覚えて再利用できる仕組み。",
+        "why_useful": "設定値を保持した小さな関数を作れるため、状態を持つ関数オブジェクトを手軽に生成できる。",
+        "example_code": """def make_multiplier(factor):\n    def multiplier(value):\n        return factor * value\n    return multiplier\n\ndouble = make_multiplier(2)\ntriple = make_multiplier(3)\n""",
+        "demo": {
+            "double(5)": double(5),
+            "triple(5)": triple(5),
+            "captured_factor_in_double": 2,
+            "captured_factor_in_triple": 3
+        },
+        "closure_definition": "make_multiplier は multiplier を返し、返された関数は factor を参照し続ける。"
+    }
+
 @router.post("/process-numbers")
 async def process_numbers(request: NumbersRequest) -> Dict[str, Any]:
     numbers = request.numbers

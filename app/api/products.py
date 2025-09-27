@@ -54,6 +54,17 @@ async def get_products_by_category(
     return result.scalars().all()
 
 
+@router.get("/cate_list", response_model=List[str])
+async def get_category_list(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get unique category list preserving insertion order"""
+    result = await db.execute(select(Product.category))
+    categories = [row[0] or "未分類" for row in result.all()]
+    unique_categories = list(dict.fromkeys(categories))
+    return unique_categories
+
+
 @router.get("/groupby", response_model=List[ProductGroup])
 async def get_products_grouped_by_category(
     db: AsyncSession = Depends(get_db)

@@ -88,6 +88,18 @@ The application will be available at:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
+### 5. View Application Logs
+
+```bash
+# Show the latest log entries
+tail logs/fastapi.log
+
+# Stream logs continuously; stop with Ctrl+C
+tail -f logs/fastapi.log
+```
+
+By default logs are written to `logs/fastapi.log`. Override the location via `.env` entries such as `LOG_DIR`, `LOG_LEVEL`, `LOG_MAX_BYTES`, and `LOG_BACKUP_COUNT`.
+
 ## 📚 API Endpoints
 
 ### Core Endpoints

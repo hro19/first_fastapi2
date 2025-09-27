@@ -38,6 +38,17 @@ async def get_products(
     return result.scalars().all()
 
 
+@router.get("/cat/{category}", response_model=List[ProductResponse])
+async def get_products_by_category(
+    category: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all products matching a category"""
+    query = select(Product).where(Product.category == category)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product_by_id(
     product_id: str, 

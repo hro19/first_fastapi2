@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,6 +27,12 @@ class Settings:
     PROJECT_NAME: str = "First FastAPI with Neon"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
+
+    # Logging
+    LOG_DIR: Path = Path(os.getenv("LOG_DIR", "logs"))
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_MAX_BYTES: int = int(os.getenv("LOG_MAX_BYTES", str(5 * 1024 * 1024)))  # 5MB
+    LOG_BACKUP_COUNT: int = int(os.getenv("LOG_BACKUP_COUNT", "5"))
 
 
 settings = Settings()

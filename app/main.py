@@ -1,9 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.api import profiles, products, image_analysis, todos
+
+from app.api import image_analysis, products, profiles, todos
+from app.api.basic import cities, func
 from app.api.strand import router as strand_router
-from app.api.basic import func, cities
+from app.core.config import settings
+from app.core.logging_config import setup_logging
+
+
+setup_logging()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

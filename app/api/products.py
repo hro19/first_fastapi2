@@ -5,7 +5,12 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.products import Product
-from app.schemas.products import ProductResponse, ProductCreate, ProductUpdate
+from app.schemas.products import (
+    ProductResponse,
+    ProductCreate,
+    ProductUpdate,
+    ProductGroup,
+)
 
 router = APIRouter()
 
@@ -47,6 +52,38 @@ async def get_products_by_category(
     query = select(Product).where(Product.category == category)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.get("/groupby", response_model=List[ProductGroup])
+async def get_products_grouped_by_category(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get products grouped by category"""
+    result = await db.execute(select(Product))
+    products = result.scalars().all()
+
+    grouped = {}
+    for product in products:
+        category = product.category or "未分類"
+        grouped.setdefault(category, []).append(product)
+
+    response: List[ProductGroup] = []
+    for category, items in grouped.items():
+        prices = [item.price for item in items if item.price is not None]
+        total_price = float(sum(prices)) if prices else 0.0
+        avg_price = round(total_price / len(prices), 2) if prices else 0.0
+
+        response.append(
+            ProductGroup(
+                category=category,
+                length=len(items),
+                total_price=total_price,
+                avg_price=avg_price,
+                products=items,
+            )
+        )
+
+    return response
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

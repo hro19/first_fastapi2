@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.products import Product
-from app.schemas.products import ProductResponse, ProductCreate
+from app.schemas.products import ProductResponse, ProductCreate, ProductUpdate
 
 router = APIRouter()
 
@@ -84,6 +84,38 @@ async def create_product(
     
     db_product = Product(id=product_id, **product.model_dump())
     db.add(db_product)
+    await db.commit()
+    await db.refresh(db_product)
+    return db_product
+
+
+@router.patch("/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: str,
+    product: ProductUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Update an existing product"""
+    result = await db.execute(select(Product).where(Product.id == product_id))
+    db_product = result.scalar_one_or_none()
+
+    if db_product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    update_data = product.model_dump(exclude_unset=True)
+
+    if "profile_id" in update_data and update_data["profile_id"]:
+        from app.models.profiles import Profile
+
+        profile_result = await db.execute(
+            select(Profile).where(Profile.id == update_data["profile_id"])
+        )
+        if profile_result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Profile not found")
+
+    for key, value in update_data.items():
+        setattr(db_product, key, value)
+
     await db.commit()
     await db.refresh(db_product)
     return db_product

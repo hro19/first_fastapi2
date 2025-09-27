@@ -10,6 +10,7 @@ class Product(Base):
     name = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=True)
+    category = Column(Text, nullable=True)
     profile_id = Column(Text, ForeignKey("profiles.id"), nullable=True)
     
     # Relationship to profile

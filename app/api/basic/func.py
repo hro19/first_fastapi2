@@ -67,7 +67,7 @@ class WeatherResponse(BaseModel):
 @router.get("/hello")
 async def hello_world() -> Dict[str, Any]:
     return {
-        "message": "Hello from basic func!",
+        "message": "good afternoon",
         "timestamp": datetime.now().isoformat(),
         "status": "success"
     }

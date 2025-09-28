@@ -1,8 +1,6 @@
 name: Daily Product Result Snapshot
 
 on:
-  schedule:
-    - cron: "21 5 * * *"  # JST 14:21
   workflow_dispatch:
 
 jobs:

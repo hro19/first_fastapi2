@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.core.database import get_db
+from datetime import datetime, timezone
+
+from app.models.product_result import ProductResult
 from app.models.products import Product
 from app.schemas.products import (
     ProductResponse,
@@ -11,6 +14,7 @@ from app.schemas.products import (
     ProductUpdate,
     ProductGroup,
 )
+from app.schemas.product_result import ProductResultResponse
 
 router = APIRouter()
 
@@ -95,6 +99,54 @@ async def get_products_grouped_by_category(
         )
 
     return response
+
+
+@router.get("/result", response_model=List[ProductResultResponse])
+async def list_product_result_snapshots(
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return stored product result snapshots (newest first)."""
+    query = (
+        select(ProductResult)
+        .order_by(ProductResult.generated_at.desc())
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    return list(result.scalars())
+
+
+@router.post("/result", response_model=ProductResultResponse, status_code=201)
+async def create_product_result_snapshot(
+    db: AsyncSession = Depends(get_db)
+):
+    """Aggregate current products and store the snapshot in product_results."""
+    stats_query = select(
+        func.coalesce(func.sum(Product.price), 0.0),
+        func.count(Product.id),
+        func.avg(Product.price),
+    )
+
+    stats_result = await db.execute(stats_query)
+    total_price, total_record, average_price = stats_result.one()
+
+    total_price = float(total_price or 0.0)
+    total_record = int(total_record or 0)
+    average_price = round(float(average_price), 2) if average_price is not None else 0.0
+
+    snapshot = ProductResult(
+        generated_at=datetime.now(timezone.utc),
+        total_price=total_price,
+        total_record=total_record,
+        average_price=average_price,
+    )
+
+    db.add(snapshot)
+    await db.commit()
+    await db.refresh(snapshot)
+
+    return snapshot
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

@@ -85,6 +85,7 @@ async def root():
         "endpoints": {
             "profiles": f"{settings.API_V1_STR}/profiles",
             "products": f"{settings.API_V1_STR}/products",
+            "product_results_list": f"{settings.API_V1_STR}/products/result",
             "image_analysis": f"{settings.API_V1_STR}/images",
             "todos": f"{settings.API_V1_STR}/todos",
             "email_service": f"{settings.API_V1_STR}/email/first",

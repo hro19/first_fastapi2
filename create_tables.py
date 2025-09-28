@@ -9,6 +9,7 @@ import sys
 from app.core.database import engine, Base
 from app.models.todo import Todo
 from app.models.profiles import Profile  
+from app.models.product_result import ProductResult
 from app.models.products import Product
 from app.models.image_analysis import ImageAnalysis
 

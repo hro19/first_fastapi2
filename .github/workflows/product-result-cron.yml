@@ -2,7 +2,7 @@ name: Daily Product Result Snapshot
 
 on:
   schedule:
-    - cron: "0 5 * * *"   # JST 14:00
+    - cron: "21 5 * * *"  # JST 14:21
   workflow_dispatch:
 
 jobs:
@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger product result snapshot
         run: |
-          curl -X POST "https://your-vercel-domain.vercel.app/api/v1/products/result" \
+          curl -X POST "https://first-fastapi2.vercel.app/api/v1/products/result" \
                -H 'accept: application/json'

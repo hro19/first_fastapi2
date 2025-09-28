@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import image_analysis, products, profiles, todos
+from app.api import image_analysis, products, profiles, todos, email
 from app.api.basic import cities, func
 from app.api.strand import router as strand_router
 from app.core.config import settings
@@ -51,6 +51,12 @@ app.include_router(
 )
 
 app.include_router(
+    email.router,
+    prefix=f"{settings.API_V1_STR}/email",
+    tags=["email"]
+)
+
+app.include_router(
     func.router,
     prefix=f"{settings.API_V1_STR}/basic",
     tags=["basic-functions"]
@@ -81,6 +87,7 @@ async def root():
             "products": f"{settings.API_V1_STR}/products",
             "image_analysis": f"{settings.API_V1_STR}/images",
             "todos": f"{settings.API_V1_STR}/todos",
+            "email_service": f"{settings.API_V1_STR}/email/first",
             "basic_functions": f"{settings.API_V1_STR}/basic/hello",
             "japanese_cities": f"{settings.API_V1_STR}/basic/cities",
             "strand_basic": f"{settings.API_V1_STR}/strand/basic",

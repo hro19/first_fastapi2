@@ -28,6 +28,14 @@ class Settings:
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
 
+    # Email Settings
+    EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+    EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "587"))
+    EMAIL_USERNAME: str = os.getenv("EMAIL_USERNAME", "")
+    EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")  # App password for Gmail
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "dropmoment19@gmail.com")
+    EMAIL_TO: str = os.getenv("EMAIL_TO", "jatain19@gmail.com")
+    
     # Logging
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "logs"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

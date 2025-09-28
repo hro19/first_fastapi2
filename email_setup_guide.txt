@@ -1,0 +1,17 @@
+# アプリパスワード設定の例
+# 
+# 生成されたアプリパスワードをEMAIL_PASSWORDに設定してください
+# 例：EMAIL_PASSWORD=abcd efgh ijkl mnop
+#
+# 注意：
+# - 通常のGmailパスワードではありません
+# - 16文字のアプリパスワードを使用してください
+# - スペースは含めても除いても動作します
+
+# 現在の設定：
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_USERNAME=dropmoment19@gmail.com
+EMAIL_PASSWORD=ここにアプリパスワードを入力
+EMAIL_FROM=dropmoment19@gmail.com
+EMAIL_TO=jatain19@gmail.com

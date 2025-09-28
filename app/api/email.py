@@ -27,7 +27,6 @@ async def send_first_email() -> Dict[str, Any]:
         
     Note:
         メール送信には環境変数の設定が必要です：
-        - EMAIL_USERNAME: 送信用Gmailアカウント
         - EMAIL_PASSWORD: アプリパスワード（Gmailの2段階認証が必要）
     """
     
@@ -72,11 +71,10 @@ async def get_email_status() -> Dict[str, Any]:
     return {
         "smtp_host": settings.EMAIL_SMTP_HOST,
         "smtp_port": settings.EMAIL_SMTP_PORT,
-        "username_configured": bool(settings.EMAIL_USERNAME),
         "password_configured": password_configured,
         "from_email": settings.EMAIL_FROM,
         "to_email": settings.EMAIL_TO,
-        "status": "configured" if (settings.EMAIL_USERNAME and password_configured) else "not_configured",
-        "message": "メールサービスの準備が完了しています" if (settings.EMAIL_USERNAME and password_configured) else ".env ファイルに EMAIL_USERNAME と EMAIL_PASSWORD を設定してください",
+        "status": "configured" if (settings.EMAIL_FROM and password_configured) else "not_configured",
+        "message": "メールサービスの準備が完了しています" if (settings.EMAIL_FROM and password_configured) else ".env ファイルに EMAIL_FROM と EMAIL_PASSWORD を設定してください",
         "note": "Gmail を使用する場合は、2段階認証を有効にしてアプリパスワードを生成する必要があります"
     }

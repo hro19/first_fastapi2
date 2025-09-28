@@ -17,7 +17,7 @@ class EmailService:
     def __init__(self):
         self.smtp_host = settings.EMAIL_SMTP_HOST
         self.smtp_port = settings.EMAIL_SMTP_PORT
-        self.username = settings.EMAIL_USERNAME
+        self.username = settings.EMAIL_FROM  # EMAIL_FROM を認証にも使用
         self.password = settings.EMAIL_PASSWORD
         self.from_email = settings.EMAIL_FROM
         self.to_email = settings.EMAIL_TO

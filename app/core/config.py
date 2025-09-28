@@ -31,10 +31,9 @@ class Settings:
     # Email Settings
     EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
     EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "587"))
-    EMAIL_USERNAME: str = os.getenv("EMAIL_USERNAME", "")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")  # App password for Gmail
-    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "dropmoment19@gmail.com")
-    EMAIL_TO: str = os.getenv("EMAIL_TO", "jatain19@gmail.com")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "jatain19@gmail.com")
+    EMAIL_TO: str = os.getenv("EMAIL_TO", "dropmoment19@gmail.com")
     
     # Logging
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "logs"))

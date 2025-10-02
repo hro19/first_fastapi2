@@ -95,6 +95,88 @@ async def get_1990_population():
         raise HTTPException(status_code=500, detail=f"Error processing population data: {str(e)}")
 
 
+@router.get("/1990_series")
+async def get_1990_population_series() -> Dict[str, Any]:
+    """Return 1990 population data summarized via a pandas Series."""
+    df = load_population_data()
+
+    try:
+        records = []
+        for i in range(17, 64):
+            if i >= len(df):
+                break
+
+            row = df.iloc[i]
+            prefecture_raw = row.iloc[0]
+            population_cell = row.iloc[17] if len(row) > 17 else None
+
+            code, prefecture_jp = parse_prefecture_cell(prefecture_raw)
+
+            if not prefecture_jp or pd.isna(population_cell):
+                continue
+
+            population = int(float(population_cell) * 1000)
+
+            prefecture_en = None
+            if len(row) > 1 and pd.notna(row.iloc[1]):
+                prefecture_en = str(row.iloc[1]).strip()
+
+            label = prefecture_en or prefecture_jp
+
+            records.append(
+                {
+                    "prefecture_code": code,
+                    "prefecture_jp": prefecture_jp,
+                    "prefecture_en": prefecture_en,
+                    "population": population,
+                    "label": label,
+                }
+            )
+
+        if not records:
+            raise HTTPException(status_code=404, detail="No population data found for 1990")
+
+        series = pd.Series(
+            {record["label"]: record["population"] for record in records},
+            name="population_1990",
+            dtype="int64",
+        )
+
+        sorted_series = series.sort_values(ascending=False)
+        top5 = sorted_series.head(5)
+
+        summary = {
+            "count": int(series.count()),
+            "total_population": int(series.sum()),
+            "average_population": int(series.mean()),
+            "max_population": {
+                "label": sorted_series.index[0],
+                "population": int(sorted_series.iloc[0]),
+            },
+        }
+
+        return {
+            "series_name": series.name,
+            "unit": "people",
+            "summary": summary,
+            "top5": {label: int(value) for label, value in top5.items()},
+            "data": [
+                {
+                    "prefecture_code": record["prefecture_code"],
+                    "prefecture_jp": record["prefecture_jp"],
+                    "prefecture_en": record["prefecture_en"],
+                    "population": record["population"],
+                }
+                for record in records
+            ],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating 1990 population series: {str(e)}")
+
+
 @router.get("/1980_2000")
 async def get_population_1980_2000() -> Dict[str, Any]:
     """Return population table data for Tokyo, Chiba, and Kanagawa from 1980 to 2000."""

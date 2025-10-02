@@ -4,9 +4,10 @@ Population data API endpoints
 from fastapi import APIRouter, HTTPException
 import pandas as pd
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
 
 router = APIRouter()
+
 
 def load_population_data():
     """Load and parse the population Excel file"""
@@ -21,6 +22,33 @@ def load_population_data():
         return df
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading population data: {str(e)}")
+
+
+def parse_prefecture_cell(value: Any) -> Tuple[Optional[str], Optional[str]]:
+    """Extract the prefecture code and Japanese name from the raw cell value."""
+    if pd.isna(value):
+        return None, None
+
+    text = str(value).strip()
+    if not text:
+        return None, None
+
+    delimiter = "\u3000"  # full-width space used in the spreadsheet
+    if delimiter in text:
+        code, name = text.split(delimiter, 1)
+        return code.strip() or None, name.strip()
+
+    return None, text
+
+
+TARGET_PREFECTURES_JP = ["東京", "千葉", "神奈川"]
+YEAR_COLUMN_INDEX = {
+    1980: 15,
+    1985: 16,
+    1990: 17,
+    1995: 18,
+    2000: 19,
+}
 
 @router.get("/1990", response_model=List[Dict[str, Any]])
 async def get_1990_population():
@@ -43,26 +71,15 @@ async def get_1990_population():
                 row = df.iloc[i]
                 prefecture_raw = row.iloc[0]
                 population_1990 = row.iloc[17]
-                
+
+                code, prefecture = parse_prefecture_cell(prefecture_raw)
+
                 # Skip if prefecture name or population is NaN
-                if pd.notna(prefecture_raw) and pd.notna(population_1990):
-                    # Clean prefecture name (remove number prefix)
-                    prefecture = str(prefecture_raw).strip()
-                    if prefecture.startswith(('01　', '02　', '03　', '04　', '05　', '06　', '07　', '08　', '09　')):
-                        prefecture = prefecture[3:]  # Remove "XX　" prefix
-                    elif prefecture.startswith(('10　', '11　', '12　', '13　', '14　', '15　', '16　', '17　', '18　', '19　')):
-                        prefecture = prefecture[3:]  # Remove "XX　" prefix
-                    elif prefecture.startswith(('20　', '21　', '22　', '23　', '24　', '25　', '26　', '27　', '28　', '29　')):
-                        prefecture = prefecture[3:]  # Remove "XX　" prefix
-                    elif prefecture.startswith(('30　', '31　', '32　', '33　', '34　', '35　', '36　', '37　', '38　', '39　')):
-                        prefecture = prefecture[3:]  # Remove "XX　" prefix
-                    elif prefecture.startswith(('40　', '41　', '42　', '43　', '44　', '45　', '46　', '47　')):
-                        prefecture = prefecture[3:]  # Remove "XX　" prefix
-                    
-                    # Convert population (in thousands) to actual population
+                if prefecture and pd.notna(population_1990):
                     population = int(float(population_1990) * 1000)
-                    
+
                     population_data.append({
+                        "prefecture_code": code,
                         "prefecture": prefecture,
                         "population_1990": population,
                         "population_unit": "people",
@@ -74,5 +91,63 @@ async def get_1990_population():
             
         return population_data
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing population data: {str(e)}")
+
+
+@router.get("/1980_2000")
+async def get_population_1980_2000() -> Dict[str, Any]:
+    """Return population table data for Tokyo, Chiba, and Kanagawa from 1980 to 2000."""
+    df = load_population_data()
+
+    try:
+        prefecture_order = {name: index for index, name in enumerate(TARGET_PREFECTURES_JP)}
+        prefecture_rows = []
+
+        for i in range(len(df)):
+            row = df.iloc[i]
+            prefecture_raw = row.iloc[0]
+            code, prefecture_jp = parse_prefecture_cell(prefecture_raw)
+
+            if prefecture_jp not in prefecture_order:
+                continue
+
+            prefecture_en = None
+            if len(row) > 1 and pd.notna(row.iloc[1]):
+                prefecture_en = str(row.iloc[1]).strip()
+
+            year_populations: Dict[str, Optional[int]] = {}
+            for year, column_index in YEAR_COLUMN_INDEX.items():
+                population_value = None
+                if column_index < len(row):
+                    cell_value = row.iloc[column_index]
+                    if pd.notna(cell_value):
+                        population_value = int(float(cell_value) * 1000)
+                year_populations[str(year)] = population_value
+
+            prefecture_rows.append(
+                {
+                    "prefecture_code": code,
+                    "prefecture_jp": prefecture_jp,
+                    "prefecture_en": prefecture_en,
+                    "populations": year_populations,
+                    "population_unit": "people",
+                }
+            )
+
+        if not prefecture_rows:
+            raise HTTPException(status_code=404, detail="No population data found for requested prefectures")
+
+        prefecture_rows.sort(key=lambda entry: prefecture_order[entry["prefecture_jp"]])
+
+        return {
+            "years": list(YEAR_COLUMN_INDEX.keys()),
+            "unit": "people",
+            "data_source": "Japanese Census 1980-2000",
+            "prefectures": prefecture_rows,
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing population data: {str(e)}")

@@ -50,6 +50,59 @@ YEAR_COLUMN_INDEX = {
     2000: 19,
 }
 
+FOUR_MILLION_THRESHOLD = 4_000_000
+DATA_SOURCE_1990 = "Japanese Census 1990"
+
+
+def extract_population_records(
+    df: pd.DataFrame,
+    *,
+    year: int,
+    start_row: int = 17,
+    end_row: int = 64,
+) -> List[Dict[str, Any]]:
+    """Return structured population records for a given census year."""
+    column_index = YEAR_COLUMN_INDEX.get(year)
+    if column_index is None:
+        raise HTTPException(status_code=400, detail=f"Unsupported year requested: {year}")
+
+    records: List[Dict[str, Any]] = []
+
+    for row_index in range(start_row, end_row):
+        if row_index >= len(df):
+            break
+
+        row = df.iloc[row_index]
+        prefecture_raw = row.iloc[0]
+        code, prefecture_jp = parse_prefecture_cell(prefecture_raw)
+
+        if not prefecture_jp or column_index >= len(row):
+            continue
+
+        population_cell = row.iloc[column_index]
+        if pd.isna(population_cell):
+            continue
+
+        population = int(float(population_cell) * 1000)
+        prefecture_en = None
+
+        if len(row) > 1 and pd.notna(row.iloc[1]):
+            prefecture_en = str(row.iloc[1]).strip()
+
+        label = prefecture_en or prefecture_jp
+
+        records.append(
+            {
+                "prefecture_code": code,
+                "prefecture_jp": prefecture_jp,
+                "prefecture_en": prefecture_en,
+                "population": population,
+                "label": label,
+            }
+        )
+
+    return records
+
 @router.get("/1990", response_model=List[Dict[str, Any]])
 async def get_1990_population():
     """
@@ -59,33 +112,21 @@ async def get_1990_population():
         List of dictionaries containing prefecture names and population data
     """
     df = load_population_data()
-    
+
     try:
-        # Extract 1990 population data
-        # Data starts from row 17 (index 17) and goes to row 63 (index 63)
-        # Column 0 has prefecture names, Column 17 has 1990 population
-        population_data = []
-        
-        for i in range(17, 64):  # Row 17-63 (index 17-63)
-            if i < len(df):
-                row = df.iloc[i]
-                prefecture_raw = row.iloc[0]
-                population_1990 = row.iloc[17]
+        records = extract_population_records(df, year=1990)
 
-                code, prefecture = parse_prefecture_cell(prefecture_raw)
+        population_data = [
+            {
+                "prefecture_code": record["prefecture_code"],
+                "prefecture": record["prefecture_jp"],
+                "population_1990": record["population"],
+                "population_unit": "people",
+                "data_source": DATA_SOURCE_1990,
+            }
+            for record in records
+        ]
 
-                # Skip if prefecture name or population is NaN
-                if prefecture and pd.notna(population_1990):
-                    population = int(float(population_1990) * 1000)
-
-                    population_data.append({
-                        "prefecture_code": code,
-                        "prefecture": prefecture,
-                        "population_1990": population,
-                        "population_unit": "people",
-                        "data_source": "Japanese Census 1990"
-                    })
-        
         if not population_data:
             raise HTTPException(status_code=404, detail="No population data found for 1990")
             
@@ -95,43 +136,65 @@ async def get_1990_population():
         raise HTTPException(status_code=500, detail=f"Error processing population data: {str(e)}")
 
 
+@router.get("/1990/over4million", response_model=Dict[str, Any])
+async def get_1990_population_over_four_million() -> Dict[str, Any]:
+    """Return prefectures where the 1990 population exceeded four million people."""
+    df = load_population_data()
+
+    try:
+        records = extract_population_records(df, year=1990)
+
+        filtered = [
+            {
+                "prefecture_code": record["prefecture_code"],
+                "prefecture_jp": record["prefecture_jp"],
+                "prefecture_en": record["prefecture_en"],
+                "population_1990": record["population"],
+                "population_unit": "people",
+            }
+            for record in records
+            if record["population"] > FOUR_MILLION_THRESHOLD
+        ]
+
+        filtered.sort(key=lambda entry: entry["population_1990"], reverse=True)
+
+        if not filtered:
+            raise HTTPException(
+                status_code=404,
+                detail="No prefectures exceeded four million residents in 1990",
+            )
+
+        prefecture_names_jp = [entry["prefecture_jp"] for entry in filtered]
+        prefecture_names_en = [
+            entry["prefecture_en"]
+            for entry in filtered
+            if entry["prefecture_en"] is not None
+        ]
+
+        return {
+            "year": 1990,
+            "threshold": FOUR_MILLION_THRESHOLD,
+            "unit": "people",
+            "data_source": DATA_SOURCE_1990,
+            "count": len(filtered),
+            "prefectures": filtered,
+            "prefecture_names_jp": prefecture_names_jp,
+            "prefecture_names_en": prefecture_names_en,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error filtering population data: {str(e)}")
+
+
 @router.get("/1990_series")
 async def get_1990_population_series() -> Dict[str, Any]:
     """Return 1990 population data summarized via a pandas Series."""
     df = load_population_data()
 
     try:
-        records = []
-        for i in range(17, 64):
-            if i >= len(df):
-                break
-
-            row = df.iloc[i]
-            prefecture_raw = row.iloc[0]
-            population_cell = row.iloc[17] if len(row) > 17 else None
-
-            code, prefecture_jp = parse_prefecture_cell(prefecture_raw)
-
-            if not prefecture_jp or pd.isna(population_cell):
-                continue
-
-            population = int(float(population_cell) * 1000)
-
-            prefecture_en = None
-            if len(row) > 1 and pd.notna(row.iloc[1]):
-                prefecture_en = str(row.iloc[1]).strip()
-
-            label = prefecture_en or prefecture_jp
-
-            records.append(
-                {
-                    "prefecture_code": code,
-                    "prefecture_jp": prefecture_jp,
-                    "prefecture_en": prefecture_en,
-                    "population": population,
-                    "label": label,
-                }
-            )
+        records = extract_population_records(df, year=1990)
 
         if not records:
             raise HTTPException(status_code=404, detail="No population data found for 1990")

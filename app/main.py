@@ -99,6 +99,7 @@ async def root():
             "japanese_cities": f"{settings.API_V1_STR}/basic/cities",
             "strand_basic": f"{settings.API_V1_STR}/strand/basic",
             "population_1990": f"{settings.API_V1_STR}/population/1990",
+            "population_1990_over_4_million": f"{settings.API_V1_STR}/population/1990/over4million",
             "population_1990_series": f"{settings.API_V1_STR}/population/1990_series",
             "population_1980_2000": f"{settings.API_V1_STR}/population/1980_2000",
         }

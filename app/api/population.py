@@ -78,7 +78,7 @@ def extract_population_records(
         prefecture_raw = row.iloc[0]
         code, prefecture_jp = parse_prefecture_cell(prefecture_raw)
 
-        if not prefecture_jp or column_index >= len(row):
+        if not prefecture_jp or not code or column_index >= len(row):
             continue
 
         population_cell = row.iloc[column_index]

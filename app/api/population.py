@@ -51,14 +51,16 @@ YEAR_COLUMN_INDEX = {
 }
 
 FOUR_MILLION_THRESHOLD = 4_000_000
+TWO_MILLION_THRESHOLD = 2_000_000
 DATA_SOURCE_1990 = "Japanese Census 1990"
+DATA_SOURCE_1980_2000 = "Japanese Census 1980-2000"
 
 
 def extract_population_records(
     df: pd.DataFrame,
     *,
     year: int,
-    start_row: int = 17,
+    start_row: int = 16,
     end_row: int = 64,
 ) -> List[Dict[str, Any]]:
     """Return structured population records for a given census year."""
@@ -288,7 +290,7 @@ async def get_population_1980_2000() -> Dict[str, Any]:
         return {
             "years": list(YEAR_COLUMN_INDEX.keys()),
             "unit": "people",
-            "data_source": "Japanese Census 1980-2000",
+            "data_source": DATA_SOURCE_1980_2000,
             "prefectures": prefecture_rows,
         }
 
@@ -296,3 +298,70 @@ async def get_population_1980_2000() -> Dict[str, Any]:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing population data: {str(e)}")
+
+
+@router.get("/1980_2000/over2million", response_model=Dict[str, Any])
+async def get_population_1980_2000_over_two_million() -> Dict[str, Any]:
+    """Return prefectures exceeding two million residents for each census year between 1980 and 2000."""
+    df = load_population_data()
+
+    try:
+        yearly_results: List[Dict[str, Any]] = []
+
+        for year in sorted(YEAR_COLUMN_INDEX.keys()):
+            records = extract_population_records(df, year=year)
+
+            filtered = [
+                {
+                    "prefecture_code": record["prefecture_code"],
+                    "prefecture_jp": record["prefecture_jp"],
+                    "prefecture_en": record["prefecture_en"],
+                    "population": record["population"],
+                    "population_unit": "people",
+                }
+                for record in records
+                if record["population"] > TWO_MILLION_THRESHOLD
+            ]
+
+            filtered.sort(key=lambda entry: entry["population"], reverse=True)
+
+            prefecture_names_jp = [entry["prefecture_jp"] for entry in filtered]
+            prefecture_names_en = [
+                entry["prefecture_en"]
+                for entry in filtered
+                if entry["prefecture_en"] is not None
+            ]
+
+            yearly_results.append(
+                {
+                    "year": year,
+                    "count": len(filtered),
+                    "prefectures": filtered,
+                    "prefecture_names_jp": prefecture_names_jp,
+                    "prefecture_names_en": prefecture_names_en,
+                }
+            )
+
+        if not yearly_results:
+            raise HTTPException(status_code=404, detail="No population data found for requested years")
+
+        prefecture_names_jp_by_year = {
+            result["year"]: result["prefecture_names_jp"] for result in yearly_results
+        }
+        prefecture_names_en_by_year = {
+            result["year"]: result["prefecture_names_en"] for result in yearly_results
+        }
+
+        return {
+            "years": yearly_results,
+            "threshold": TWO_MILLION_THRESHOLD,
+            "unit": "people",
+            "data_source": DATA_SOURCE_1980_2000,
+            "prefecture_names_jp_by_year": prefecture_names_jp_by_year,
+            "prefecture_names_en_by_year": prefecture_names_en_by_year,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error filtering population data: {str(e)}")
